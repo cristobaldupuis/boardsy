@@ -7,13 +7,14 @@ export const Route = createFileRoute("/")({ component: Home });
 function Home() {
   const board = PRODUCTS[0];
   const cards = PRODUCTS[1];
+  const casa = PRODUCTS.find((p) => p.kind === "casa");
 
   return (
     <main>
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-10 lg:grid-cols-2 lg:py-16">
         <img
-          src="/images/hero-boardopolis.jpg"
-          alt="Boardopolis on a sunlit table"
+          src="/images/catalog-boardopolis.jpg"
+          alt="Boardopolis catalog board"
           className="w-full rounded-sm object-cover"
         />
         <div>
@@ -36,16 +37,16 @@ function Home() {
             </Link>
             <Link
               to="/products/$slug"
-              params={{ slug: "boardsycards" }}
+              params={{ slug: "childrens-house" }}
               className="rounded-full border border-ink px-6 py-3 text-sm text-ink"
             >
-              Shop cards
+              Children’s House
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-6 px-5 pb-16 md:grid-cols-2">
+      <section className="mx-auto grid max-w-6xl gap-6 px-5 pb-16 md:grid-cols-2 lg:grid-cols-3">
         <ProductTile
           slug={board.slug}
           name={board.name}
@@ -60,6 +61,15 @@ function Home() {
           tagline={cards.tagline}
           image={cards.image}
         />
+        {casa ? (
+          <ProductTile
+            slug={casa.slug}
+            name={casa.name}
+            price={casa.priceFromCents}
+            tagline={casa.tagline}
+            image={casa.image}
+          />
+        ) : null}
       </section>
     </main>
   );
@@ -86,7 +96,10 @@ function ProductTile({
     >
       <div>
         <p className="text-xs tracking-[0.2em] text-ink">{name.toUpperCase()}</p>
-        <p className="mt-2 font-display text-3xl tabular-nums">{formatUsd(price)}</p>
+        <p className="mt-2 font-display text-3xl tabular-nums">
+          {slug === "boardopolis" || slug === "childrens-house" ? "from " : ""}
+          {formatUsd(price)}
+        </p>
         <p className="mt-2 max-w-[12rem] text-muted">{tagline}</p>
       </div>
       <img src={image} alt="" className="h-44 w-full rounded-sm object-cover" />

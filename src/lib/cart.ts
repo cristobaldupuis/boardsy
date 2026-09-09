@@ -16,6 +16,7 @@ export type CartItem = {
   utilities?: string[];
   specials?: Record<string, string>;
   photos: number;
+  pack?: string;
 };
 
 type CartState = {
