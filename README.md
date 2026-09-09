@@ -6,7 +6,7 @@ This is a live mock of the storefront (Dawn-shaped layout, cream/terracotta, 2D 
 
 ## Stack
 
-TanStack Start, React 19, Tailwind v4.
+TanStack Start, React 19, Tailwind v4. Production build: `npm run build` (Vite + Nitro / Vercel).
 
 ## Product
 
