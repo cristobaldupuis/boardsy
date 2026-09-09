@@ -29,14 +29,16 @@ function Cart() {
                 <p className="text-sm text-muted">
                   {item.title} · {item.qty} · {item.photos} photos
                 </p>
+                {item.spaces?.length ? (
+                  <p className="mt-1 text-xs text-muted">
+                    {item.spaces.filter(Boolean).slice(0, 4).join(" · ")}
+                    {item.stations?.filter(Boolean).length ? ` · ${item.stations.filter(Boolean)[0]}` : ""}
+                  </p>
+                ) : null}
               </div>
               <div className="text-right">
                 <p className="tabular-nums">{formatUsd(item.priceCents)}</p>
-                <button
-                  type="button"
-                  className="text-sm text-muted underline"
-                  onClick={() => remove(item.id)}
-                >
+                <button type="button" className="text-sm text-muted underline" onClick={() => remove(item.id)}>
                   Remove
                 </button>
               </div>
@@ -47,10 +49,7 @@ function Cart() {
       {items.length > 0 ? (
         <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
           <p className="tabular-nums">Total {formatUsd(total)}</p>
-          <Link
-            to="/checkout"
-            className="rounded-full bg-terracotta px-6 py-3 text-sm text-cream"
-          >
+          <Link to="/checkout" className="rounded-full bg-terracotta px-6 py-3 text-sm text-cream">
             Checkout
           </Link>
         </div>

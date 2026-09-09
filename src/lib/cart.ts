@@ -12,6 +12,8 @@ export type CartItem = {
   preset: string;
   preview?: string;
   spaces?: string[];
+  stations?: string[];
+  utilities?: string[];
   photos: number;
 };
 
