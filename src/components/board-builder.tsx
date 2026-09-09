@@ -1,5 +1,5 @@
 import { Compass, Home, ImagePlus, Pause, Undo2 } from "lucide-react";
-import { useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/lib/cart";
 import {
@@ -36,6 +36,33 @@ const CARD_PHOTO_SLOTS = [
   { id: "p4", top: "72%", left: "72%", w: "22%", h: "30%" },
   { id: "p5", top: "50%", left: "50%", w: "18%", h: "24%" },
   { id: "p6", top: "50%", left: "18%", w: "16%", h: "22%" },
+];
+
+const TABLE_SCENES = [
+  {
+    id: "family",
+    label: "Family table",
+    image: "/images/table-family.jpg",
+    caption: "Sunday table. Mid-game, pieces out.",
+  },
+  {
+    id: "unbox",
+    label: "Unboxing",
+    image: "/images/table-unbox.jpg",
+    caption: "The box on the linen — board, cards, houses.",
+  },
+  {
+    id: "wedding",
+    label: "Wedding table",
+    image: "/images/table-wedding.jpg",
+    caption: "After the toasts. Marble and two glasses.",
+  },
+  {
+    id: "friends",
+    label: "Game night",
+    image: "/images/table-friends.jpg",
+    caption: "Coffee table, late. The 4th Floor.",
+  },
 ];
 
 type FocusKey = string | null;
@@ -204,6 +231,7 @@ export function BoardBuilder({ product }: { product: Product }) {
           <p className="mt-3 text-center text-xs text-muted">
             START is GO (payday). HOME is the bank. Click a square to rename it.
           </p>
+          <TableScenes presetId={presetId} />
         </div>
       ) : (
         <div className="relative aspect-square overflow-hidden rounded-sm bg-cream ring-1 ring-border">
@@ -668,6 +696,60 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     <div className="mt-6">
       <p className="mb-2 text-sm text-muted">{label}</p>
       {children}
+    </div>
+  );
+}
+
+function TableScenes({ presetId }: { presetId: string }) {
+  const [sceneId, setSceneId] = useState(presetId === "wedding" || presetId === "friends" ? presetId : "family");
+
+  useEffect(() => {
+    if (presetId === "wedding" || presetId === "friends" || presetId === "family") {
+      setSceneId(presetId);
+    }
+  }, [presetId]);
+
+  const scene = TABLE_SCENES.find((s) => s.id === sceneId) ?? TABLE_SCENES[0];
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted">On the table</p>
+          <p className="font-display text-xl text-ink">How it actually looks</p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {TABLE_SCENES.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setSceneId(s.id)}
+            className={`rounded-full border px-3 py-1.5 text-xs ${
+              sceneId === s.id ? "border-ink text-ink" : "border-border text-muted"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+      <figure className="mt-3 overflow-hidden rounded-sm bg-cream ring-1 ring-border">
+        <img src={scene.image} alt={scene.label} className="aspect-square w-full object-cover" />
+        <figcaption className="px-3 py-3 text-sm text-muted">{scene.caption}</figcaption>
+      </figure>
+      <div className="mt-2 grid grid-cols-4 gap-2">
+        {TABLE_SCENES.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setSceneId(s.id)}
+            className={`overflow-hidden rounded-sm ring-1 ${sceneId === s.id ? "ring-terracotta" : "ring-border"}`}
+            aria-label={s.label}
+          >
+            <img src={s.image} alt="" className="aspect-square w-full object-cover" />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
