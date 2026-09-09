@@ -24,7 +24,7 @@ function Shop() {
             />
             <p className="mt-4 text-xs tracking-[0.2em]">{p.name.toUpperCase()}</p>
             <p className="font-display text-2xl tabular-nums">
-              {p.kind === "boardopolis" ? "from " : ""}
+              {p.kind === "boardopolis" || p.kind === "casa" ? "from " : ""}
               {formatUsd(p.priceFromCents)}
             </p>
             <p className="text-muted">{p.tagline}</p>

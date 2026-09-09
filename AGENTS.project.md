@@ -2,8 +2,10 @@ This conversation belongs to a Grok project. The project's files are mounted at 
 
 Git: never commit or push to `main`. Always work on a new branch (or `dev`) and open a pull request into `main`.
 
-Boardopolis pricing (USD list; Etsy comps are CAD):
-- Board $79 — print only. MsHgames “GAME BOARD” is ~CA$79.
-- Silver $149 — playable kit (board, custom money, cards, houses, dice, tokens). Competitor silver ~CA$163–181.
-- Gold $209 — silver + photo box + custom pawns. Competitor gold ~CA$210–257.
-Do not treat $79 as the full game. Default the builder to Silver. Extra copies: Board +$60, Silver +$100, Gold +$140.
+Boardopolis / Children's House pricing (USD list):
+- Board $79 each. No volume drop.
+- Silver: 1st $149, 2nd $124, 3rd+ $100. First and second never get cheaper retroactively.
+- Gold: 1st $209, 2nd $184, 3rd+ $149.
+HOME is Free Parking (rest), not the bank. Bank/tax is its own square (e.g. Grandma’s account). PAUSE is jail.
+
+The Children's House is a Montessori experiment for London Montessori Academy (London, Ontario) fundraising: school keeps $15 / $25 / $40 of Board / Silver / Gold.

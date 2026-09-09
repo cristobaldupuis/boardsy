@@ -13,7 +13,7 @@ export type Pack = {
   extraCents?: number;
 };
 
-export type ProductKind = "boardopolis" | "cards" | "party";
+export type ProductKind = "boardopolis" | "cards" | "party" | "casa";
 
 export type StreetGroup = {
   id: string;
@@ -27,6 +27,7 @@ export type NameSet = {
   id: string;
   name: string;
   names: string[];
+  glyphs?: string[];
 };
 
 export type SpecialSpace = {
@@ -43,6 +44,7 @@ export type BoardopolisPreset = {
   streets: Record<string, string[]>;
   stationsId: string;
   utilitiesId: string;
+  banksId: string;
   specials: Record<SpecialSpace["id"], string>;
 };
 
@@ -60,6 +62,11 @@ export type Product = {
   photoSlots: number;
   includes: string[];
   leadTime: string;
+  fundraise?: {
+    school: string;
+    city: string;
+    keepCents: { board: number; silver: number; gold: number };
+  };
 };
 
 export const PACKS_BOARD: Pack[] = [
@@ -159,9 +166,9 @@ export const SPECIALS: SpecialSpace[] = [
   {
     id: "home",
     label: "HOME",
-    role: "the bank",
-    hint: "Where money lives.",
-    examples: ["Grandma's account", "The Joint Account", "The Tab"],
+    role: "like Free Parking",
+    hint: "A rest square. Not the bank.",
+    examples: ["Sunday Dinner", "The Couch", "The Garden"],
   },
   {
     id: "pause",
@@ -184,21 +191,25 @@ export const STATION_SETS: NameSet[] = [
     id: "compass",
     name: "Compass",
     names: ["North Station", "East Station", "South Station", "West Station"],
+    glyphs: ["arrow-up", "arrow-right", "arrow-down", "arrow-left"],
   },
   {
     id: "travel",
     name: "Travel",
     names: ["The Airport", "The Train", "The Bus Depot", "The Ferry"],
+    glyphs: ["plane", "train", "bus", "ship"],
   },
   {
     id: "family",
     name: "Family routes",
     names: ["School Run", "The Office", "Grandma's", "The Cabin"],
+    glyphs: ["backpack", "briefcase", "home", "trees"],
   },
   {
     id: "hangouts",
     name: "Hangouts",
     names: ["The Bar", "The Diner", "The Park", "Home"],
+    glyphs: ["wine", "utensils", "trees", "home"],
   },
   { id: "custom", name: "Write your own", names: ["", "", "", ""] },
 ];
@@ -208,24 +219,52 @@ export const UTILITY_SETS: NameSet[] = [
     id: "civic",
     name: "Power & water",
     names: ["The Power Plant", "The Water Tower"],
+    glyphs: ["zap", "drop"],
   },
   {
     id: "home",
     name: "Home stuff",
     names: ["The Wi-Fi", "The Thermostat"],
+    glyphs: ["wifi", "thermo"],
   },
   {
     id: "kitchen",
     name: "Kitchen",
     names: ["The Coffee Machine", "The Dishwasher"],
+    glyphs: ["mug", "utensils"],
   },
   {
     id: "yard",
     name: "Yard",
     names: ["The Lawn Mower", "The Snow Blower"],
+    glyphs: ["leaf", "snow"],
   },
   { id: "custom", name: "Write your own", names: ["", ""] },
 ];
+
+export const BANK_SETS: NameSet[] = [
+  {
+    id: "family",
+    name: "Family bank",
+    names: ["Grandma's account", "The Cookie Jar"],
+    glyphs: ["bank", "coins"],
+  },
+  {
+    id: "couple",
+    name: "Shared",
+    names: ["The Joint Account", "The Registry"],
+    glyphs: ["bank", "coins"],
+  },
+  {
+    id: "friends",
+    name: "The pot",
+    names: ["The Tab", "The Float"],
+    glyphs: ["bank", "coins"],
+  },
+  { id: "custom", name: "Write your own", names: ["", ""] },
+];
+
+export const DRAW_GLYPHS = ["draw", "spark", "heart"];
 
 export const BOARDOPOLIS_PRESETS: BoardopolisPreset[] = [
   {
@@ -233,9 +272,10 @@ export const BOARDOPOLIS_PRESETS: BoardopolisPreset[] = [
     name: "Family hometown",
     stationsId: "family",
     utilitiesId: "home",
+    banksId: "family",
     specials: {
       start: "Allowance Day",
-      home: "Grandma's account",
+      home: "Sunday Dinner",
       pause: "Time Out",
       detour: "Miss a turn",
     },
@@ -255,9 +295,10 @@ export const BOARDOPOLIS_PRESETS: BoardopolisPreset[] = [
     name: "Wedding",
     stationsId: "travel",
     utilitiesId: "kitchen",
+    banksId: "couple",
     specials: {
       start: "The First Dance",
-      home: "The Joint Account",
+      home: "The Garden",
       pause: "Cold Feet",
       detour: "Lost the Rings",
     },
@@ -277,9 +318,10 @@ export const BOARDOPOLIS_PRESETS: BoardopolisPreset[] = [
     name: "Friends",
     stationsId: "hangouts",
     utilitiesId: "yard",
+    banksId: "friends",
     specials: {
       start: "First Round",
-      home: "The Tab",
+      home: "The Couch",
       pause: "On the Bench",
       detour: "Uber Home",
     },
@@ -310,7 +352,7 @@ export const BOARD_CELLS: BoardCell[] = [
   { kind: "street", id: "s-brown-0", groupId: "brown", index: 0 },
   { kind: "draw", id: "draw-1", label: "Draw" },
   { kind: "street", id: "s-brown-1", groupId: "brown", index: 1 },
-  { kind: "tax", id: "tax-1", label: "Tax" },
+  { kind: "tax", id: "tax-1", label: "Bank" },
   { kind: "station", id: "st-0", index: 0 },
   { kind: "street", id: "s-sky-0", groupId: "sky", index: 0 },
   { kind: "draw", id: "draw-2", label: "Draw" },
@@ -344,7 +386,7 @@ export const BOARD_CELLS: BoardCell[] = [
   { kind: "station", id: "st-3", index: 3 },
   { kind: "draw", id: "draw-6", label: "Draw" },
   { kind: "street", id: "s-navy-0", groupId: "navy", index: 0 },
-  { kind: "tax", id: "tax-2", label: "Tax" },
+  { kind: "tax", id: "tax-2", label: "Bank" },
   { kind: "street", id: "s-navy-1", groupId: "navy", index: 1 },
 ];
 
@@ -363,8 +405,8 @@ export const PRODUCTS: Product[] = [
     name: "Boardopolis",
     tagline: "The city game with your streets",
     priceFromCents: 7900,
-    image: "/images/hero-boardopolis.jpg",
-    gallery: ["/images/hero-boardopolis.jpg", "/images/board-top.jpg"],
+    image: "/images/catalog-boardopolis.jpg",
+    gallery: ["/images/catalog-boardopolis.jpg", "/images/catalog-boardopolis-alt.jpg", "/images/table-family.jpg"],
     packs: PACKS_BOARD,
     colorways: [
       { id: "heritage", name: "Heritage", swatch: "#C45C26" },
@@ -442,14 +484,65 @@ export const PRODUCTS: Product[] = [
     ],
     leadTime: "Made to order · typically 2–3 weeks",
   },
+  {
+    slug: "childrens-house",
+    kind: "casa",
+    name: "The Children's House",
+    tagline: "A calm walk through work, nature, and grace",
+    priceFromCents: 7900,
+    image: "/images/catalog-casa.jpg",
+    gallery: ["/images/catalog-casa.jpg", "/images/table-casa.jpg"],
+    packs: PACKS_BOARD,
+    colorways: [
+      { id: "clay", name: "Clay", swatch: "#B56B4A" },
+      { id: "sage", name: "Sage", swatch: "#5B7A6A" },
+    ],
+    presets: [
+      { id: "lma", name: "London Montessori Academy", spaces: [] },
+      { id: "casa", name: "Any Children's House", spaces: [] },
+    ],
+    photoSlots: 6,
+    includes: [
+      "Board — 18\" folded path of works, botanicals, and your classroom",
+      "Silver — board, wooden-style tokens, work cards, peace rose",
+      "Gold — silver plus photo box and named child pawns",
+      "School fundraising edition available",
+      "Proof emailed before we print",
+    ],
+    leadTime: "Made to order · typically 2–3 weeks",
+    fundraise: {
+      school: "London Montessori Academy",
+      city: "London, Ontario",
+      keepCents: { board: 1500, silver: 2500, gold: 4000 },
+    },
+  },
 ];
 
 export function getProduct(slug: string) {
   return PRODUCTS.find((p) => p.slug === slug);
 }
 
-export function extraCopyPrice(base: Pack, extraQty: number) {
-  return base.priceCents + extraQty * (base.extraCents ?? 10000);
+export function packPrice(pack: Pack, qty: number) {
+  const n = Math.max(1, Math.floor(qty));
+  if (pack.id === "board") return pack.priceCents * n;
+  if (pack.id === "silver") {
+    if (n === 1) return 14900;
+    if (n === 2) return 14900 + 12400;
+    return 14900 + 12400 + (n - 2) * 10000;
+  }
+  if (pack.id === "gold") {
+    if (n === 1) return 20900;
+    if (n === 2) return 20900 + 18400;
+    return 20900 + 18400 + (n - 2) * 14900;
+  }
+  return pack.priceCents;
+}
+
+export function nextCopyCents(pack: Pack, currentQty: number) {
+  if (pack.id === "board") return pack.priceCents;
+  if (pack.id === "silver") return currentQty <= 1 ? 12400 : 10000;
+  if (pack.id === "gold") return currentQty <= 1 ? 18400 : 14900;
+  return null;
 }
 
 export function nameSetById(sets: NameSet[], id: string) {

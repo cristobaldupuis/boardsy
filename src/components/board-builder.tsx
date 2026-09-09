@@ -3,18 +3,23 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSPropert
 import { useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/lib/cart";
 import {
+  BANK_SETS,
   BOARD_CELLS,
   BOARDOPOLIS_PRESETS,
+  DRAW_GLYPHS,
   SPECIALS,
   STATION_SETS,
   STREET_GROUPS,
   UTILITY_SETS,
   cloneStreets,
   nameSetById,
+  nextCopyCents,
+  packPrice,
   type BoardCell,
   type Product,
   type SpecialSpace,
 } from "@/lib/products";
+import { BANK_GLYPH_OPTIONS, DRAW_GLYPH_OPTIONS, Glyph, STATION_GLYPH_OPTIONS, UTILITY_GLYPH_OPTIONS } from "@/lib/glyphs";
 import { formatUsd } from "@/lib/utils";
 
 /** Frames sit in the inner map, around the compass — not on the colour strips. */
@@ -39,6 +44,12 @@ const CARD_PHOTO_SLOTS = [
 ];
 
 const TABLE_SCENES = [
+  {
+    id: "studio",
+    label: "Studio",
+    image: "/images/catalog-boardopolis.jpg",
+    caption: "How it ships — 18×18 board, grey sweep.",
+  },
   {
     id: "family",
     label: "Family table",
@@ -80,21 +91,35 @@ export function BoardBuilder({ product }: { product: Product }) {
   const [streets, setStreets] = useState(() => cloneStreets(family.streets));
   const [stationSet, setStationSet] = useState(family.stationsId);
   const [stations, setStations] = useState(() => [...nameSetById(STATION_SETS, family.stationsId).names]);
+  const [stationGlyphs, setStationGlyphs] = useState(
+    () => nameSetById(STATION_SETS, family.stationsId).glyphs ?? ["train", "plane", "bus", "ship"],
+  );
   const [utilitySet, setUtilitySet] = useState(family.utilitiesId);
   const [utilities, setUtilities] = useState(() => [...nameSetById(UTILITY_SETS, family.utilitiesId).names]);
+  const [utilityGlyphs, setUtilityGlyphs] = useState(
+    () => nameSetById(UTILITY_SETS, family.utilitiesId).glyphs ?? ["wifi", "thermo"],
+  );
+  const [bankSet, setBankSet] = useState(family.banksId);
+  const [banks, setBanks] = useState(() => [...nameSetById(BANK_SETS, family.banksId).names]);
+  const [bankGlyphs, setBankGlyphs] = useState(
+    () => nameSetById(BANK_SETS, family.banksId).glyphs ?? ["bank", "coins"],
+  );
+  const [drawGlyph, setDrawGlyph] = useState(DRAW_GLYPHS[0]);
+  const [drawLabel, setDrawLabel] = useState("Draw");
   const [specials, setSpecials] = useState<SpecialsState>({ ...family.specials });
   const [photos, setPhotos] = useState<Record<string, string>>({});
-  const [extra, setExtra] = useState(0);
+  const [marks, setMarks] = useState<Record<string, string>>({});
+  const [qty, setQty] = useState(1);
   const [focus, setFocus] = useState<FocusKey>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const pendingSlot = useRef<string | null>(null);
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const pack = product.packs.find((p) => p.id === packId) ?? product.packs[0];
-  const extraEach = pack.extraCents ?? 10000;
-  const price = pack.priceCents + extra * extraEach;
-  const filled = Object.keys(photos).length;
   const isBoard = product.kind === "boardopolis";
+  const price = isBoard ? packPrice(pack, qty) : pack.priceCents;
+  const nextCents = isBoard ? nextCopyCents(pack, qty) : null;
+  const filled = Object.keys(photos).length;
   const slots = (isBoard ? PHOTO_SLOTS : CARD_PHOTO_SLOTS).slice(0, product.photoSlots);
 
   const previewStyle = useMemo(
@@ -112,19 +137,35 @@ export function BoardBuilder({ product }: { product: Product }) {
     setStreets(cloneStreets(p.streets));
     setStationSet(p.stationsId);
     setStations([...nameSetById(STATION_SETS, p.stationsId).names]);
+    setStationGlyphs(nameSetById(STATION_SETS, p.stationsId).glyphs ?? ["train", "plane", "bus", "ship"]);
     setUtilitySet(p.utilitiesId);
     setUtilities([...nameSetById(UTILITY_SETS, p.utilitiesId).names]);
+    setUtilityGlyphs(nameSetById(UTILITY_SETS, p.utilitiesId).glyphs ?? ["wifi", "thermo"]);
+    setBankSet(p.banksId);
+    setBanks([...nameSetById(BANK_SETS, p.banksId).names]);
+    setBankGlyphs(nameSetById(BANK_SETS, p.banksId).glyphs ?? ["bank", "coins"]);
     setSpecials({ ...p.specials });
   }
 
   function applyStationSet(id: string) {
     setStationSet(id);
-    setStations([...nameSetById(STATION_SETS, id).names]);
+    const set = nameSetById(STATION_SETS, id);
+    setStations([...set.names]);
+    if (set.glyphs) setStationGlyphs([...set.glyphs]);
   }
 
   function applyUtilitySet(id: string) {
     setUtilitySet(id);
-    setUtilities([...nameSetById(UTILITY_SETS, id).names]);
+    const set = nameSetById(UTILITY_SETS, id);
+    setUtilities([...set.names]);
+    if (set.glyphs) setUtilityGlyphs([...set.glyphs]);
+  }
+
+  function applyBankSet(id: string) {
+    setBankSet(id);
+    const set = nameSetById(BANK_SETS, id);
+    setBanks([...set.names]);
+    if (set.glyphs) setBankGlyphs([...set.glyphs]);
   }
 
   function openFile(slot: string) {
@@ -137,7 +178,11 @@ export function BoardBuilder({ product }: { product: Product }) {
     const slot = pendingSlot.current;
     if (!file || !slot) return;
     const url = URL.createObjectURL(file);
-    setPhotos((prev) => ({ ...prev, [slot]: url }));
+    if (slot.startsWith("mark:")) {
+      setMarks((prev) => ({ ...prev, [slot.slice(5)]: url }));
+    } else {
+      setPhotos((prev) => ({ ...prev, [slot]: url }));
+    }
     e.target.value = "";
   }
 
@@ -181,16 +226,31 @@ export function BoardBuilder({ product }: { product: Product }) {
     }
     if (cell.kind === "station") return stations[cell.index] || `Station ${cell.index + 1}`;
     if (cell.kind === "utility") return utilities[cell.index] || `Utility ${cell.index + 1}`;
+    if (cell.kind === "tax") return banks[cell.id === "tax-1" ? 0 : 1] || "Bank";
+    if (cell.kind === "draw") return drawLabel;
     if (cell.kind === "corner") return specials[cell.id] || cell.label;
-    return cell.label;
+    return "Draw";
   }
 
   function cellKey(cell: BoardCell): string | null {
     if (cell.kind === "street") return `street:${cell.groupId}:${cell.index}`;
     if (cell.kind === "station") return `station:${cell.index}`;
     if (cell.kind === "utility") return `utility:${cell.index}`;
+    if (cell.kind === "tax") return `bank:${cell.id === "tax-1" ? 0 : 1}`;
+    if (cell.kind === "draw") return "draw";
     if (cell.kind === "corner") return `special:${cell.id}`;
     return null;
+  }
+
+  function tileArt(cell: BoardCell): { glyph?: string; src?: string } {
+    if (cell.kind === "station") return { glyph: stationGlyphs[cell.index], src: marks[`station:${cell.index}`] };
+    if (cell.kind === "utility") return { glyph: utilityGlyphs[cell.index], src: marks[`utility:${cell.index}`] };
+    if (cell.kind === "tax") {
+      const i = cell.id === "tax-1" ? 0 : 1;
+      return { glyph: bankGlyphs[i], src: marks[`bank:${i}`] };
+    }
+    if (cell.kind === "draw") return { glyph: drawGlyph, src: marks.draw };
+    return {};
   }
 
   function addToCart() {
@@ -198,7 +258,7 @@ export function BoardBuilder({ product }: { product: Product }) {
     add({
       slug: product.slug,
       name: product.name,
-      qty: pack.qty + extra,
+      qty: isBoard ? qty : pack.qty,
       priceCents: price,
       title,
       colorway,
@@ -227,12 +287,13 @@ export function BoardBuilder({ product }: { product: Product }) {
             specials={specials}
             cellLabel={cellLabel}
             cellKey={cellKey}
+            tileArt={tileArt}
             onFocusCell={(key) => key && focusKey(key)}
             onOpenFile={openFile}
             onDrop={onDrop}
           />
           <p className="mt-3 text-center text-xs text-muted">
-            START is GO (payday). HOME is the bank. Click a square to rename it.
+            START is GO. PAUSE is jail. HOME is rest. Bank is its own square — try Grandma’s account.
           </p>
           <TableScenes presetId={presetId} />
         </div>
@@ -264,7 +325,7 @@ export function BoardBuilder({ product }: { product: Product }) {
                   type="button"
                   onClick={() => {
                     setPackId(p.id);
-                    setExtra(0);
+                    setQty(1);
                   }}
                   className={`w-full rounded-sm border px-4 py-3 text-left ${
                     packId === p.id ? "border-terracotta" : "border-border"
@@ -286,7 +347,7 @@ export function BoardBuilder({ product }: { product: Product }) {
                   type="button"
                   onClick={() => {
                     setPackId(p.id);
-                    setExtra(0);
+                    setQty(1);
                   }}
                   className={`rounded-sm border px-3 py-3 text-sm ${
                     packId === p.id ? "border-terracotta text-ink" : "border-border text-muted"
@@ -299,9 +360,34 @@ export function BoardBuilder({ product }: { product: Product }) {
             </div>
           )}
           {isBoard ? (
-            <button type="button" className="mt-2 text-sm text-muted underline" onClick={() => setExtra((n) => n + 1)}>
-              Extra copies +{formatUsd(extraEach)} each{extra ? ` · ${extra} added` : ""}
-            </button>
+            <div className="mt-3">
+              <p className="mb-2 text-xs text-muted">Copies</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="size-9 rounded-sm border border-border text-ink"
+                  onClick={() => setQty((n) => Math.max(1, n - 1))}
+                >
+                  −
+                </button>
+                <span className="min-w-8 text-center tabular-nums">{qty}</span>
+                <button
+                  type="button"
+                  className="size-9 rounded-sm border border-border text-ink"
+                  onClick={() => setQty((n) => n + 1)}
+                >
+                  +
+                </button>
+              </div>
+              {pack.id === "board" ? (
+                <p className="mt-2 text-xs text-muted">Board stays {formatUsd(pack.priceCents)} each. No volume drop.</p>
+              ) : nextCents ? (
+                <p className="mt-2 text-xs text-muted">
+                  This one {formatUsd(pack.priceCents)}. Next copy {formatUsd(nextCents)}
+                  {pack.id === "silver" ? " · then $100" : " · then $149"}. First and second never get cheaper.
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </Field>
 
@@ -440,87 +526,116 @@ export function BoardBuilder({ product }: { product: Product }) {
             </Field>
 
             <Field label="Stations">
-              <div className="mb-3 flex flex-wrap gap-2">
-                {STATION_SETS.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => applyStationSet(s.id)}
-                    className={`rounded-full border px-3 py-1.5 text-xs ${
-                      stationSet === s.id ? "border-ink text-ink" : "border-border text-muted"
-                    }`}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-              <div className="space-y-2">
-                {stations.map((name, i) => {
-                  const key = `station:${i}`;
-                  return (
-                    <input
-                      key={key}
-                      ref={(el) => {
-                        fieldRefs.current[key] = el;
-                      }}
-                      value={name}
-                      placeholder={`Station ${i + 1}`}
-                      onFocus={() => setFocus(key)}
-                      onChange={(e) => {
-                        const next = [...stations];
-                        next[i] = e.target.value;
-                        setStations(next);
-                        setStationSet("custom");
-                      }}
-                      className={`w-full rounded-sm border bg-cream px-3 py-2 text-sm outline-none ${
-                        focus === key ? "border-terracotta" : "border-border"
-                      }`}
-                    />
-                  );
-                })}
-              </div>
+              <p className="mb-2 text-xs text-muted">Packaged marks, or upload your own thumbnail.</p>
+              <SetPills sets={STATION_SETS} current={stationSet} onPick={applyStationSet} />
+              {stations.map((name, i) => (
+                <MarkLine
+                  key={`station:${i}`}
+                  name={name}
+                  focused={focus === `station:${i}`}
+                  glyph={stationGlyphs[i]}
+                  glyphOptions={STATION_GLYPH_OPTIONS}
+                  art={marks[`station:${i}`]}
+                  placeholder={`Station ${i + 1}`}
+                  onFocus={() => setFocus(`station:${i}`)}
+                  onName={(v) => {
+                    const next = [...stations];
+                    next[i] = v;
+                    setStations(next);
+                    setStationSet("custom");
+                  }}
+                  onGlyph={(g) => {
+                    const next = [...stationGlyphs];
+                    next[i] = g;
+                    setStationGlyphs(next);
+                  }}
+                  onUpload={() => openFile(`mark:station:${i}`)}
+                  inputRef={(el) => {
+                    fieldRefs.current[`station:${i}`] = el;
+                  }}
+                />
+              ))}
             </Field>
 
             <Field label="Utilities">
-              <div className="mb-3 flex flex-wrap gap-2">
-                {UTILITY_SETS.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => applyUtilitySet(s.id)}
-                    className={`rounded-full border px-3 py-1.5 text-xs ${
-                      utilitySet === s.id ? "border-ink text-ink" : "border-border text-muted"
-                    }`}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-              <div className="space-y-2">
-                {utilities.map((name, i) => {
-                  const key = `utility:${i}`;
-                  return (
-                    <input
-                      key={key}
-                      ref={(el) => {
-                        fieldRefs.current[key] = el;
-                      }}
-                      value={name}
-                      placeholder={`Utility ${i + 1}`}
-                      onFocus={() => setFocus(key)}
-                      onChange={(e) => {
-                        const next = [...utilities];
-                        next[i] = e.target.value;
-                        setUtilities(next);
-                        setUtilitySet("custom");
-                      }}
-                      className={`w-full rounded-sm border bg-cream px-3 py-2 text-sm outline-none ${
-                        focus === key ? "border-terracotta" : "border-border"
-                      }`}
-                    />
-                  );
-                })}
-              </div>
+              <SetPills sets={UTILITY_SETS} current={utilitySet} onPick={applyUtilitySet} />
+              {utilities.map((name, i) => (
+                <MarkLine
+                  key={`utility:${i}`}
+                  name={name}
+                  focused={focus === `utility:${i}`}
+                  glyph={utilityGlyphs[i]}
+                  glyphOptions={UTILITY_GLYPH_OPTIONS}
+                  art={marks[`utility:${i}`]}
+                  placeholder={`Utility ${i + 1}`}
+                  onFocus={() => setFocus(`utility:${i}`)}
+                  onName={(v) => {
+                    const next = [...utilities];
+                    next[i] = v;
+                    setUtilities(next);
+                    setUtilitySet("custom");
+                  }}
+                  onGlyph={(g) => {
+                    const next = [...utilityGlyphs];
+                    next[i] = g;
+                    setUtilityGlyphs(next);
+                  }}
+                  onUpload={() => openFile(`mark:utility:${i}`)}
+                  inputRef={(el) => {
+                    fieldRefs.current[`utility:${i}`] = el;
+                  }}
+                />
+              ))}
+            </Field>
+
+            <Field label="Bank — not HOME">
+              <p className="mb-2 text-xs text-muted">Like tax. Grandma’s account lives here.</p>
+              <SetPills sets={BANK_SETS} current={bankSet} onPick={applyBankSet} />
+              {banks.map((name, i) => (
+                <MarkLine
+                  key={`bank:${i}`}
+                  name={name}
+                  focused={focus === `bank:${i}`}
+                  glyph={bankGlyphs[i]}
+                  glyphOptions={BANK_GLYPH_OPTIONS}
+                  art={marks[`bank:${i}`]}
+                  placeholder="Bank"
+                  onFocus={() => setFocus(`bank:${i}`)}
+                  onName={(v) => {
+                    const next = [...banks];
+                    next[i] = v;
+                    setBanks(next);
+                    setBankSet("custom");
+                  }}
+                  onGlyph={(g) => {
+                    const next = [...bankGlyphs];
+                    next[i] = g;
+                    setBankGlyphs(next);
+                  }}
+                  onUpload={() => openFile(`mark:bank:${i}`)}
+                  inputRef={(el) => {
+                    fieldRefs.current[`bank:${i}`] = el;
+                  }}
+                />
+              ))}
+            </Field>
+
+            <Field label="Draw">
+              <MarkLine
+                name={drawLabel}
+                focused={focus === "draw"}
+                glyph={drawGlyph}
+                glyphOptions={DRAW_GLYPH_OPTIONS}
+                art={marks.draw}
+                placeholder="Draw"
+                onFocus={() => setFocus("draw")}
+                onName={setDrawLabel}
+                onGlyph={setDrawGlyph}
+                onUpload={() => openFile("mark:draw")}
+                inputRef={(el) => {
+                  fieldRefs.current.draw = el;
+                }}
+              />
             </Field>
           </>
         ) : null}
@@ -553,6 +668,7 @@ function BoardRing({
   specials,
   cellLabel,
   cellKey,
+  tileArt,
   onFocusCell,
   onOpenFile,
   onDrop,
@@ -564,6 +680,7 @@ function BoardRing({
   specials: SpecialsState;
   cellLabel: (cell: BoardCell) => string;
   cellKey: (cell: BoardCell) => string | null;
+  tileArt: (cell: BoardCell) => { glyph?: string; src?: string };
   onFocusCell: (key: string | null) => void;
   onOpenFile: (slot: string) => void;
   onDrop: (slot: string, ev: DragEvent) => void;
@@ -603,7 +720,7 @@ function BoardRing({
                   {cell.kind === "corner" ? (
                     <CornerFace id={cell.id} name={specials[cell.id]} />
                   ) : (
-                    <TileFace side={pos.side} label={cellLabel(cell)} ink={inkText} />
+                    <TileFace side={pos.side} label={cellLabel(cell)} ink={inkText} art={tileArt(cell)} />
                   )}
                 </button>
               );
@@ -652,10 +769,12 @@ function TileFace({
   side,
   label,
   ink,
+  art,
 }: {
   side: "bottom" | "left" | "top" | "right" | "corner";
   label: string;
   ink: boolean;
+  art?: { glyph?: string; src?: string };
 }) {
   const style: CSSProperties =
     side === "left"
@@ -665,11 +784,16 @@ function TileFace({
         : {};
   return (
     <span
-      className={`flex h-full w-full items-center justify-center px-[1px] text-center font-medium leading-[1.05] ${
+      className={`flex h-full w-full flex-col items-center justify-center gap-0.5 px-[1px] text-center font-medium leading-[1.05] ${
         ink ? "text-ink/80" : "text-cream"
       } text-[6px] sm:text-[7px] md:text-[8px]`}
       style={style}
     >
+      {art?.src ? (
+        <img src={art.src} alt="" className="size-3 rounded-[2px] object-cover sm:size-3.5" />
+      ) : art?.glyph ? (
+        <Glyph id={art.glyph} className="size-2.5 sm:size-3" />
+      ) : null}
       {label}
     </span>
   );
@@ -723,6 +847,99 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     <div className="mt-6">
       <p className="mb-2 text-sm text-muted">{label}</p>
       {children}
+    </div>
+  );
+}
+
+function SetPills({
+  sets,
+  current,
+  onPick,
+}: {
+  sets: { id: string; name: string }[];
+  current: string;
+  onPick: (id: string) => void;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap gap-2">
+      {sets.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => onPick(s.id)}
+          className={`rounded-full border px-3 py-1.5 text-xs ${
+            current === s.id ? "border-ink text-ink" : "border-border text-muted"
+          }`}
+        >
+          {s.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MarkLine({
+  name,
+  focused,
+  glyph,
+  glyphOptions,
+  art,
+  placeholder,
+  onFocus,
+  onName,
+  onGlyph,
+  onUpload,
+  inputRef,
+}: {
+  name: string;
+  focused: boolean;
+  glyph?: string;
+  glyphOptions: string[];
+  art?: string;
+  placeholder: string;
+  onFocus: () => void;
+  onName: (v: string) => void;
+  onGlyph: (id: string) => void;
+  onUpload: () => void;
+  inputRef: (el: HTMLInputElement | null) => void;
+}) {
+  return (
+    <div className="mb-3">
+      <input
+        ref={inputRef}
+        value={name}
+        placeholder={placeholder}
+        onFocus={onFocus}
+        onChange={(e) => onName(e.target.value)}
+        className={`w-full rounded-sm border bg-cream px-3 py-2 text-sm outline-none ${
+          focused ? "border-terracotta" : "border-border"
+        }`}
+      />
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        {glyphOptions.map((g) => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => onGlyph(g)}
+            className={`flex size-8 items-center justify-center rounded-sm border ${
+              !art && glyph === g ? "border-ink text-ink" : "border-border text-muted"
+            }`}
+            aria-label={g}
+          >
+            <Glyph id={g} className="size-3.5" />
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={onUpload}
+          className={`flex size-8 items-center justify-center overflow-hidden rounded-sm border ${
+            art ? "border-ink" : "border-dashed border-border text-muted"
+          }`}
+          aria-label="Upload thumbnail"
+        >
+          {art ? <img src={art} alt="" className="h-full w-full object-cover" /> : <ImagePlus className="size-3.5" />}
+        </button>
+      </div>
     </div>
   );
 }
