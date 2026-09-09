@@ -5,9 +5,12 @@ export type Colorway = {
 };
 
 export type Pack = {
+  id: string;
   qty: number;
   priceCents: number;
   label: string;
+  blurb?: string;
+  extraCents?: number;
 };
 
 export type ProductKind = "boardopolis" | "cards" | "party";
@@ -60,9 +63,30 @@ export type Product = {
 };
 
 export const PACKS_BOARD: Pack[] = [
-  { qty: 1, priceCents: 15000, label: "1" },
-  { qty: 2, priceCents: 27500, label: "2" },
-  { qty: 3, priceCents: 37500, label: "3" },
+  {
+    id: "board",
+    qty: 1,
+    priceCents: 7900,
+    extraCents: 6000,
+    label: "Board",
+    blurb: "The print. Streets, photos, title. You bring the pieces.",
+  },
+  {
+    id: "silver",
+    qty: 1,
+    priceCents: 14900,
+    extraCents: 10000,
+    label: "Silver",
+    blurb: "The night. Board, custom money, deed cards, houses, dice, tokens.",
+  },
+  {
+    id: "gold",
+    qty: 1,
+    priceCents: 20900,
+    extraCents: 14000,
+    label: "Gold",
+    blurb: "The gift. Silver plus photo box and custom pawns.",
+  },
 ];
 
 export const STREET_GROUPS: StreetGroup[] = [
@@ -338,7 +362,7 @@ export const PRODUCTS: Product[] = [
     kind: "boardopolis",
     name: "Boardopolis",
     tagline: "The city game with your streets",
-    priceFromCents: 15000,
+    priceFromCents: 7900,
     image: "/images/hero-boardopolis.jpg",
     gallery: ["/images/hero-boardopolis.jpg", "/images/board-top.jpg"],
     packs: PACKS_BOARD,
@@ -349,11 +373,9 @@ export const PRODUCTS: Product[] = [
     presets: BOARDOPOLIS_PRESETS.map((p) => ({ id: p.id, name: p.name, spaces: [] })),
     photoSlots: 8,
     includes: [
-      "18\" folded board with your streets, stations, and utilities",
-      "Rigid gift box",
-      "Deed cards + event cards",
-      "Play money, houses, dice, tokens",
-      "Rules rewritten in plain language",
+      "Board — 18\" folded print with your streets and photos",
+      "Silver — board, custom money, deed cards, houses, dice, tokens",
+      "Gold — silver plus photo box and custom pawns",
       "Proof emailed before we print",
     ],
     leadTime: "Made to order · typically 2–3 weeks",
@@ -367,9 +389,9 @@ export const PRODUCTS: Product[] = [
     image: "/images/boardsycards.jpg",
     gallery: ["/images/boardsycards.jpg"],
     packs: [
-      { qty: 1, priceCents: 4900, label: "1 deck" },
-      { qty: 2, priceCents: 8800, label: "2 decks" },
-      { qty: 3, priceCents: 12000, label: "3 decks" },
+      { id: "1", qty: 1, priceCents: 4900, label: "1 deck" },
+      { id: "2", qty: 2, priceCents: 8800, label: "2 decks" },
+      { id: "3", qty: 3, priceCents: 12000, label: "3 decks" },
     ],
     colorways: [
       { id: "cream", name: "Cream", swatch: "#E8DFD2" },
@@ -398,9 +420,9 @@ export const PRODUCTS: Product[] = [
     image: "/images/wilddeck.jpg",
     gallery: ["/images/wilddeck.jpg"],
     packs: [
-      { qty: 1, priceCents: 5900, label: "1" },
-      { qty: 2, priceCents: 10800, label: "2" },
-      { qty: 3, priceCents: 15000, label: "3" },
+      { id: "1", qty: 1, priceCents: 5900, label: "1" },
+      { id: "2", qty: 2, priceCents: 10800, label: "2" },
+      { id: "3", qty: 3, priceCents: 15000, label: "3" },
     ],
     colorways: [
       { id: "rust", name: "Rust", swatch: "#C45C26" },
@@ -427,7 +449,7 @@ export function getProduct(slug: string) {
 }
 
 export function extraCopyPrice(base: Pack, extraQty: number) {
-  return base.priceCents + extraQty * 10000;
+  return base.priceCents + extraQty * (base.extraCents ?? 10000);
 }
 
 export function nameSetById(sets: NameSet[], id: string) {

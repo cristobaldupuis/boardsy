@@ -27,7 +27,8 @@ function Cart() {
               <div>
                 <p className="font-medium">{item.name}</p>
                 <p className="text-sm text-muted">
-                  {item.title} · {item.qty} · {item.photos} photos
+                  {item.title}
+                  {item.pack ? ` · ${item.pack}` : ""} · {item.qty} · {item.photos} photos
                 </p>
                 {item.spaces?.length ? (
                   <p className="mt-1 text-xs text-muted">

@@ -86,7 +86,10 @@ function ProductTile({
     >
       <div>
         <p className="text-xs tracking-[0.2em] text-ink">{name.toUpperCase()}</p>
-        <p className="mt-2 font-display text-3xl tabular-nums">{formatUsd(price)}</p>
+        <p className="mt-2 font-display text-3xl tabular-nums">
+          {slug === "boardopolis" ? "from " : ""}
+          {formatUsd(price)}
+        </p>
         <p className="mt-2 max-w-[12rem] text-muted">{tagline}</p>
       </div>
       <img src={image} alt="" className="h-44 w-full rounded-sm object-cover" />

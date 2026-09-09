@@ -23,7 +23,10 @@ function Shop() {
               className="aspect-[4/3] w-full rounded-sm object-cover"
             />
             <p className="mt-4 text-xs tracking-[0.2em]">{p.name.toUpperCase()}</p>
-            <p className="font-display text-2xl tabular-nums">{formatUsd(p.priceFromCents)}</p>
+            <p className="font-display text-2xl tabular-nums">
+              {p.kind === "boardopolis" ? "from " : ""}
+              {formatUsd(p.priceFromCents)}
+            </p>
             <p className="text-muted">{p.tagline}</p>
           </Link>
         ))}

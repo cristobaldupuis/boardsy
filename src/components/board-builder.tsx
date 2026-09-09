@@ -75,7 +75,8 @@ export function BoardBuilder({ product }: { product: Product }) {
   const [title, setTitle] = useState("The Hale Family");
   const [presetId, setPresetId] = useState(product.kind === "boardopolis" ? family.id : product.presets[0].id);
   const [colorway, setColorway] = useState(product.colorways[0].id);
-  const [packQty, setPackQty] = useState(product.packs[0].qty);
+  const defaultPack = product.packs.find((p) => p.id === "silver") ?? product.packs[0];
+  const [packId, setPackId] = useState(defaultPack.id);
   const [streets, setStreets] = useState(() => cloneStreets(family.streets));
   const [stationSet, setStationSet] = useState(family.stationsId);
   const [stations, setStations] = useState(() => [...nameSetById(STATION_SETS, family.stationsId).names]);
@@ -89,8 +90,9 @@ export function BoardBuilder({ product }: { product: Product }) {
   const pendingSlot = useRef<string | null>(null);
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const pack = product.packs.find((p) => p.qty === packQty) ?? product.packs[0];
-  const price = pack.priceCents + extra * 10000;
+  const pack = product.packs.find((p) => p.id === packId) ?? product.packs[0];
+  const extraEach = pack.extraCents ?? 10000;
+  const price = pack.priceCents + extra * extraEach;
   const filled = Object.keys(photos).length;
   const isBoard = product.kind === "boardopolis";
   const slots = (isBoard ? PHOTO_SLOTS : CARD_PHOTO_SLOTS).slice(0, product.photoSlots);
@@ -201,6 +203,7 @@ export function BoardBuilder({ product }: { product: Product }) {
       title,
       colorway,
       preset: presetId,
+      pack: pack.label,
       photos: filled,
       spaces: isBoard ? streetNames : undefined,
       stations: isBoard ? stations : undefined,
@@ -252,28 +255,52 @@ export function BoardBuilder({ product }: { product: Product }) {
         <h1 className="font-display text-4xl text-ink">{product.name}</h1>
         <p className="mt-1 text-lg tabular-nums text-ink">{formatUsd(price)}</p>
 
-        <Field label="Pack size">
-          <div className="grid grid-cols-3 gap-2">
-            {product.packs.map((p) => (
-              <button
-                key={p.qty}
-                type="button"
-                onClick={() => {
-                  setPackQty(p.qty);
-                  setExtra(0);
-                }}
-                className={`rounded-sm border px-3 py-3 text-sm ${
-                  packQty === p.qty && extra === 0 ? "border-terracotta text-ink" : "border-border text-muted"
-                }`}
-              >
-                <span className="block font-medium text-ink">{p.label}</span>
-                <span className="tabular-nums">{formatUsd(p.priceCents)}</span>
-              </button>
-            ))}
-          </div>
+        <Field label={isBoard ? "Package" : "Pack size"}>
+          {isBoard ? (
+            <div className="space-y-2">
+              {product.packs.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setPackId(p.id);
+                    setExtra(0);
+                  }}
+                  className={`w-full rounded-sm border px-4 py-3 text-left ${
+                    packId === p.id ? "border-terracotta" : "border-border"
+                  }`}
+                >
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="font-medium text-ink">{p.label}</span>
+                    <span className="tabular-nums text-ink">{formatUsd(p.priceCents)}</span>
+                  </span>
+                  {p.blurb ? <span className="mt-1 block text-xs text-muted">{p.blurb}</span> : null}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {product.packs.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setPackId(p.id);
+                    setExtra(0);
+                  }}
+                  className={`rounded-sm border px-3 py-3 text-sm ${
+                    packId === p.id ? "border-terracotta text-ink" : "border-border text-muted"
+                  }`}
+                >
+                  <span className="block font-medium text-ink">{p.label}</span>
+                  <span className="tabular-nums">{formatUsd(p.priceCents)}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {isBoard ? (
             <button type="button" className="mt-2 text-sm text-muted underline" onClick={() => setExtra((n) => n + 1)}>
-              Extra copies +$100 each{extra ? ` · ${extra} added` : ""}
+              Extra copies +{formatUsd(extraEach)} each{extra ? ` · ${extra} added` : ""}
             </button>
           ) : null}
         </Field>
