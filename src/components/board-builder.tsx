@@ -1,10 +1,11 @@
-import { ImagePlus } from "lucide-react";
-import { useMemo, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
+import { Compass, Home, ImagePlus, Pause, Undo2 } from "lucide-react";
+import { useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/lib/cart";
 import {
   BOARD_CELLS,
   BOARDOPOLIS_PRESETS,
+  SPECIALS,
   STATION_SETS,
   STREET_GROUPS,
   UTILITY_SETS,
@@ -12,28 +13,33 @@ import {
   nameSetById,
   type BoardCell,
   type Product,
+  type SpecialSpace,
 } from "@/lib/products";
 import { formatUsd } from "@/lib/utils";
 
+/** Frames sit in the inner map, around the compass — not on the colour strips. */
 const PHOTO_SLOTS = [
-  { id: "p1", top: "18%", left: "22%" },
-  { id: "p2", top: "18%", left: "78%" },
-  { id: "p3", top: "78%", left: "22%" },
-  { id: "p4", top: "78%", left: "78%" },
+  { id: "p1", top: "20%", left: "22%", w: "13%", h: "13%" },
+  { id: "p2", top: "14%", left: "50%", w: "13%", h: "13%" },
+  { id: "p3", top: "20%", left: "78%", w: "13%", h: "13%" },
+  { id: "p4", top: "50%", left: "16%", w: "13%", h: "13%" },
+  { id: "p5", top: "50%", left: "84%", w: "13%", h: "13%" },
+  { id: "p6", top: "80%", left: "22%", w: "13%", h: "13%" },
+  { id: "p7", top: "86%", left: "50%", w: "13%", h: "13%" },
+  { id: "p8", top: "80%", left: "78%", w: "13%", h: "13%" },
 ];
 
 const CARD_PHOTO_SLOTS = [
-  { id: "p1", top: "18%", left: "18%" },
-  { id: "p2", top: "18%", left: "42%" },
-  { id: "p3", top: "18%", left: "66%" },
-  { id: "p4", top: "42%", left: "18%" },
-  { id: "p5", top: "42%", left: "66%" },
-  { id: "p6", top: "66%", left: "18%" },
-  { id: "p7", top: "66%", left: "42%" },
-  { id: "p8", top: "66%", left: "66%" },
+  { id: "p1", top: "28%", left: "28%", w: "22%", h: "30%" },
+  { id: "p2", top: "28%", left: "72%", w: "22%", h: "30%" },
+  { id: "p3", top: "72%", left: "28%", w: "22%", h: "30%" },
+  { id: "p4", top: "72%", left: "72%", w: "22%", h: "30%" },
+  { id: "p5", top: "50%", left: "50%", w: "18%", h: "24%" },
+  { id: "p6", top: "50%", left: "18%", w: "16%", h: "22%" },
 ];
 
 type FocusKey = string | null;
+type SpecialsState = Record<SpecialSpace["id"], string>;
 
 export function BoardBuilder({ product }: { product: Product }) {
   const navigate = useNavigate();
@@ -48,6 +54,7 @@ export function BoardBuilder({ product }: { product: Product }) {
   const [stations, setStations] = useState(() => [...nameSetById(STATION_SETS, family.stationsId).names]);
   const [utilitySet, setUtilitySet] = useState(family.utilitiesId);
   const [utilities, setUtilities] = useState(() => [...nameSetById(UTILITY_SETS, family.utilitiesId).names]);
+  const [specials, setSpecials] = useState<SpecialsState>({ ...family.specials });
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [extra, setExtra] = useState(0);
   const [focus, setFocus] = useState<FocusKey>(null);
@@ -78,6 +85,7 @@ export function BoardBuilder({ product }: { product: Product }) {
     setStations([...nameSetById(STATION_SETS, p.stationsId).names]);
     setUtilitySet(p.utilitiesId);
     setUtilities([...nameSetById(UTILITY_SETS, p.utilitiesId).names]);
+    setSpecials({ ...p.specials });
   }
 
   function applyStationSet(id: string) {
@@ -139,9 +147,12 @@ export function BoardBuilder({ product }: { product: Product }) {
   }
 
   function cellLabel(cell: BoardCell) {
-    if (cell.kind === "street") return streets[cell.groupId]?.[cell.index] || STREET_GROUPS.find((g) => g.id === cell.groupId)?.examples[cell.index] || "Street";
+    if (cell.kind === "street") {
+      return streets[cell.groupId]?.[cell.index] || STREET_GROUPS.find((g) => g.id === cell.groupId)?.examples[cell.index] || "Street";
+    }
     if (cell.kind === "station") return stations[cell.index] || `Station ${cell.index + 1}`;
     if (cell.kind === "utility") return utilities[cell.index] || `Utility ${cell.index + 1}`;
+    if (cell.kind === "corner") return specials[cell.id] || cell.label;
     return cell.label;
   }
 
@@ -149,6 +160,7 @@ export function BoardBuilder({ product }: { product: Product }) {
     if (cell.kind === "street") return `street:${cell.groupId}:${cell.index}`;
     if (cell.kind === "station") return `station:${cell.index}`;
     if (cell.kind === "utility") return `utility:${cell.index}`;
+    if (cell.kind === "corner") return `special:${cell.id}`;
     return null;
   }
 
@@ -166,26 +178,33 @@ export function BoardBuilder({ product }: { product: Product }) {
       spaces: isBoard ? streetNames : undefined,
       stations: isBoard ? stations : undefined,
       utilities: isBoard ? utilities : undefined,
+      specials: isBoard ? specials : undefined,
     });
     void navigate({ to: "/cart" });
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
 
       {isBoard ? (
-        <BoardRing
-          title={title}
-          photos={photos}
-          slots={slots}
-          focus={focus}
-          cellLabel={cellLabel}
-          cellKey={cellKey}
-          onFocusCell={(key) => key && focusKey(key)}
-          onOpenFile={openFile}
-          onDrop={onDrop}
-        />
+        <div>
+          <BoardRing
+            title={title}
+            photos={photos}
+            slots={slots}
+            focus={focus}
+            specials={specials}
+            cellLabel={cellLabel}
+            cellKey={cellKey}
+            onFocusCell={(key) => key && focusKey(key)}
+            onOpenFile={openFile}
+            onDrop={onDrop}
+          />
+          <p className="mt-3 text-center text-xs text-muted">
+            START is GO (payday). HOME is the bank. Click a square to rename it.
+          </p>
+        </div>
       ) : (
         <div className="relative aspect-square overflow-hidden rounded-sm bg-cream ring-1 ring-border">
           <img src={product.image} alt="" className="h-full w-full object-cover" style={previewStyle} />
@@ -276,9 +295,52 @@ export function BoardBuilder({ product }: { product: Product }) {
 
         {isBoard ? (
           <>
+            <Field label="Specials — classic jobs, renamed">
+              <p className="mb-3 text-xs text-muted">GO becomes payday. The bank becomes whoever holds the money.</p>
+              <div className="space-y-4">
+                {SPECIALS.map((sp) => {
+                  const key = `special:${sp.id}`;
+                  return (
+                    <div key={sp.id}>
+                      <p className="mb-1 text-xs tracking-wide text-muted uppercase">
+                        {sp.label} <span className="normal-case tracking-normal">· {sp.role}</span>
+                      </p>
+                      <input
+                        ref={(el) => {
+                          fieldRefs.current[key] = el;
+                        }}
+                        value={specials[sp.id]}
+                        placeholder={sp.examples[0]}
+                        onFocus={() => setFocus(key)}
+                        onChange={(e) => setSpecials((prev) => ({ ...prev, [sp.id]: e.target.value }))}
+                        className={`w-full rounded-sm border bg-cream px-3 py-2 text-sm outline-none ${
+                          focus === key ? "border-terracotta" : "border-border"
+                        }`}
+                      />
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {sp.examples.map((ex) => (
+                          <button
+                            key={ex}
+                            type="button"
+                            onClick={() => {
+                              setSpecials((prev) => ({ ...prev, [sp.id]: ex }));
+                              setFocus(key);
+                            }}
+                            className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted hover:border-ink hover:text-ink"
+                          >
+                            {ex}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Field>
+
             <Field label="Streets — every coloured space">
-              <p className="mb-3 text-xs text-muted">Tap a colour on the board or type below. Ideas fill the next empty slot.</p>
-              <div className="max-h-[28rem] space-y-5 overflow-auto pr-1">
+              <p className="mb-3 text-xs text-muted">Tap a square on the board. Ideas fill the next empty slot.</p>
+              <div className="max-h-[22rem] space-y-5 overflow-auto pr-1">
                 {STREET_GROUPS.map((group) => (
                   <div key={group.id}>
                     <p className="mb-2 flex items-center gap-2 text-sm font-medium text-ink">
@@ -433,6 +495,7 @@ function BoardRing({
   photos,
   slots,
   focus,
+  specials,
   cellLabel,
   cellKey,
   onFocusCell,
@@ -441,8 +504,9 @@ function BoardRing({
 }: {
   title: string;
   photos: Record<string, string>;
-  slots: { id: string; top: string; left: string }[];
+  slots: { id: string; top: string; left: string; w: string; h: string }[];
   focus: FocusKey;
+  specials: SpecialsState;
   cellLabel: (cell: BoardCell) => string;
   cellKey: (cell: BoardCell) => string | null;
   onFocusCell: (key: string | null) => void;
@@ -450,78 +514,58 @@ function BoardRing({
   onDrop: (slot: string, ev: DragEvent) => void;
 }) {
   return (
-    <div className="relative aspect-square w-full min-w-0 overflow-hidden rounded-sm bg-[#1a1512] p-1.5 ring-1 ring-border sm:p-2">
+    <div className="relative aspect-square w-full min-w-0 overflow-hidden rounded-[1.4rem] bg-[#efe6d8] p-2 ring-1 ring-border sm:p-2.5">
       <div
-        className="grid h-full w-full gap-px"
+        className="grid h-full w-full gap-[3px]"
         style={{
-          gridTemplateColumns: "1.35fr repeat(9, 1fr) 1.35fr",
-          gridTemplateRows: "1.35fr repeat(9, 1fr) 1.35fr",
+          gridTemplateColumns: "1.55fr repeat(9, 1fr) 1.55fr",
+          gridTemplateRows: "1.55fr repeat(9, 1fr) 1.55fr",
         }}
       >
         {BOARD_CELLS.map((cell, i) => {
           const pos = boardPosition(i);
           const key = cellKey(cell);
           const group = cell.kind === "street" ? STREET_GROUPS.find((g) => g.id === cell.groupId) : null;
-          const active = key && focus === key;
-          return (
-            <button
-              key={cell.id}
-              type="button"
-              onClick={() => onFocusCell(key)}
-              className={`relative flex overflow-hidden bg-cream text-left ${
-                cell.kind === "corner" ? "items-center justify-center" : ""
-              } ${active ? "ring-2 ring-inset ring-terracotta" : ""}`}
-              style={{ gridColumn: pos.col, gridRow: pos.row }}
-            >
-              {group ? (
-                <span
-                  className="absolute bg-current"
-                  style={{
-                    color: group.color,
-                    ...(pos.side === "bottom" ? { top: 0, left: 0, right: 0, height: "22%" } : {}),
-                    ...(pos.side === "top" ? { bottom: 0, left: 0, right: 0, height: "22%" } : {}),
-                    ...(pos.side === "left" ? { top: 0, right: 0, bottom: 0, width: "22%" } : {}),
-                    ...(pos.side === "right" ? { top: 0, left: 0, bottom: 0, width: "22%" } : {}),
-                  }}
-                />
-              ) : null}
-              {cell.kind === "station" || cell.kind === "utility" ? (
-                <span
-                  className="absolute bg-ink/80"
-                  style={{
-                    ...(pos.side === "bottom" ? { top: 0, left: 0, right: 0, height: "22%" } : {}),
-                    ...(pos.side === "top" ? { bottom: 0, left: 0, right: 0, height: "22%" } : {}),
-                    ...(pos.side === "left" ? { top: 0, right: 0, bottom: 0, width: "22%" } : {}),
-                    ...(pos.side === "right" ? { top: 0, left: 0, bottom: 0, width: "22%" } : {}),
-                  }}
-                />
-              ) : null}
-              <span
-                className={`px-0.5 text-[7px] leading-tight text-ink sm:text-[8px] md:text-[9px] ${
-                  cell.kind === "corner" ? "font-display text-[9px] sm:text-[11px]" : "mt-[22%] sm:mt-[24%]"
-                }`}
-                style={
-                  pos.side === "left"
-                    ? { writingMode: "vertical-rl", transform: "rotate(180deg)", marginTop: 0, paddingRight: "22%" }
-                    : pos.side === "right"
-                      ? { writingMode: "vertical-rl", marginTop: 0, paddingLeft: "22%" }
-                      : pos.side === "top"
-                        ? { marginTop: 0, marginBottom: "22%", alignSelf: "flex-end" }
-                        : undefined
-                }
-              >
-                {cellLabel(cell)}
-              </span>
-            </button>
-          );
+          const active = Boolean(key && focus === key);
+              const inkText =
+                cell.kind === "draw" ||
+                cell.kind === "tax" ||
+                group?.id === "sky" ||
+                group?.id === "yellow";
+              const fill =
+                group?.color ??
+                (cell.kind === "station" ? "#3d4a5c" : cell.kind === "utility" ? "#6a5a48" : cell.kind === "corner" ? "#fbf7f1" : "#f4ece0");
+              return (
+                <button
+                  key={cell.id}
+                  type="button"
+                  onClick={() => onFocusCell(key)}
+                  className={`relative overflow-hidden rounded-[3px] text-left transition ${
+                    cell.kind === "corner" ? "ring-1 ring-ink/15" : ""
+                  } ${active ? "z-10 ring-2 ring-terracotta" : ""}`}
+                  style={{ gridColumn: pos.col, gridRow: pos.row, background: fill }}
+                >
+                  {cell.kind === "corner" ? (
+                    <CornerFace id={cell.id} name={specials[cell.id]} />
+                  ) : (
+                    <TileFace side={pos.side} label={cellLabel(cell)} ink={inkText} />
+                  )}
+                </button>
+              );
         })}
         <div
-          className="relative bg-[#f3e6d2]"
-          style={{ gridColumn: "2 / 11", gridRow: "2 / 11" }}
+          className="relative overflow-hidden rounded-sm"
+          style={{
+            gridColumn: "2 / 11",
+            gridRow: "2 / 11",
+            background:
+              "radial-gradient(circle at 50% 54%, rgba(255,255,255,0.0) 14%, rgba(232,220,200,0.35) 15%, transparent 16%), radial-gradient(circle at 50% 54%, transparent 22%, rgba(90,110,100,0.07) 23%, transparent 24%), radial-gradient(circle at 50% 54%, transparent 32%, rgba(90,110,100,0.06) 33%, transparent 34%), #f6efe4",
+          }}
         >
-          <p className="pointer-events-none absolute left-1/2 top-[10%] w-[80%] -translate-x-1/2 text-center font-display text-lg text-ink sm:text-2xl md:text-3xl">
+          <p className="pointer-events-none absolute left-1/2 top-[4%] z-10 w-[70%] -translate-x-1/2 text-center font-display text-base leading-tight text-ink sm:text-xl md:text-2xl">
             {title || "Your title"}
           </p>
+          <Compass className="pointer-events-none absolute left-1/2 top-[54%] size-[18%] -translate-x-1/2 -translate-y-1/2 text-sage/40" strokeWidth={1} />
           {slots.map((slot) => (
             <PhotoDrop
               key={slot.id}
@@ -537,17 +581,54 @@ function BoardRing({
   );
 }
 
+function CornerFace({ id, name }: { id: SpecialSpace["id"]; name: string }) {
+  const meta = SPECIALS.find((s) => s.id === id);
+  const Icon = id === "start" ? Compass : id === "pause" ? Pause : id === "home" ? Home : Undo2;
+  return (
+    <span className="flex h-full flex-col items-center justify-center gap-0.5 px-1 text-center">
+      <Icon className="size-3 text-ink/70 sm:size-4" strokeWidth={1.5} />
+      <span className="font-display text-[8px] leading-tight text-ink sm:text-[10px] md:text-[11px]">{name}</span>
+      <span className="hidden text-[7px] tracking-wide text-muted uppercase sm:block">{meta?.label}</span>
+    </span>
+  );
+}
+
+function TileFace({
+  side,
+  label,
+  ink,
+}: {
+  side: "bottom" | "left" | "top" | "right" | "corner";
+  label: string;
+  ink: boolean;
+}) {
+  const style: CSSProperties =
+    side === "left"
+      ? { writingMode: "vertical-rl", transform: "rotate(180deg)" }
+      : side === "right"
+        ? { writingMode: "vertical-rl" }
+        : {};
+  return (
+    <span
+      className={`flex h-full w-full items-center justify-center px-[1px] text-center font-medium leading-[1.05] ${
+        ink ? "text-ink/80" : "text-cream"
+      } text-[6px] sm:text-[7px] md:text-[8px]`}
+      style={style}
+    >
+      {label}
+    </span>
+  );
+}
+
 function boardPosition(i: number): { row: number; col: number; side: "bottom" | "left" | "top" | "right" | "corner" } {
-  if (i <= 10) {
-    return { row: 11, col: 11 - i, side: i === 0 || i === 10 ? "corner" : "bottom" };
-  }
-  if (i < 20) {
-    return { row: 11 - (i - 10), col: 1, side: "left" };
-  }
-  if (i <= 30) {
-    return { row: 1, col: i - 19, side: i === 20 || i === 30 ? "corner" : "top" };
-  }
-  return { row: i - 29, col: 11, side: "right" };
+  if (i === 0) return { row: 1, col: 1, side: "corner" };
+  if (i <= 9) return { row: 1, col: i + 1, side: "top" };
+  if (i === 10) return { row: 1, col: 11, side: "corner" };
+  if (i <= 19) return { row: i - 9, col: 11, side: "right" };
+  if (i === 20) return { row: 11, col: 11, side: "corner" };
+  if (i <= 29) return { row: 11, col: 31 - i, side: "bottom" };
+  if (i === 30) return { row: 11, col: 1, side: "corner" };
+  return { row: 41 - i, col: 1, side: "left" };
 }
 
 function PhotoDrop({
@@ -556,7 +637,7 @@ function PhotoDrop({
   onOpen,
   onDrop,
 }: {
-  slot: { id: string; top: string; left: string };
+  slot: { id: string; top: string; left: string; w: string; h: string };
   src?: string;
   onOpen: () => void;
   onDrop: (e: DragEvent) => void;
@@ -567,16 +648,15 @@ function PhotoDrop({
       onClick={onOpen}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
-      className="absolute size-[18%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-sm border border-dashed border-ink/40 bg-cream/80"
-      style={{ top: slot.top, left: slot.left }}
+      className="absolute z-[1] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-md border border-dashed border-ink/30 bg-cream/55 shadow-sm backdrop-blur-[1px] hover:bg-cream/80"
+      style={{ top: slot.top, left: slot.left, width: slot.w, height: slot.h }}
       aria-label={`Photo ${slot.id}`}
     >
       {src ? (
         <img src={src} alt="" className="h-full w-full object-cover" />
       ) : (
-        <span className="flex h-full flex-col items-center justify-center gap-1 p-1 text-[10px] text-muted">
-          <ImagePlus className="size-4" />
-          Drop a photo
+        <span className="flex h-full flex-col items-center justify-center text-muted">
+          <ImagePlus className="size-3 sm:size-3.5" />
         </span>
       )}
     </button>

@@ -14,6 +14,7 @@ export type CartItem = {
   spaces?: string[];
   stations?: string[];
   utilities?: string[];
+  specials?: Record<string, string>;
   photos: number;
 };
 

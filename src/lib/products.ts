@@ -26,12 +26,21 @@ export type NameSet = {
   names: string[];
 };
 
+export type SpecialSpace = {
+  id: "start" | "pause" | "home" | "detour";
+  label: string;
+  role: string;
+  hint: string;
+  examples: string[];
+};
+
 export type BoardopolisPreset = {
   id: string;
   name: string;
   streets: Record<string, string[]>;
   stationsId: string;
   utilitiesId: string;
+  specials: Record<SpecialSpace["id"], string>;
 };
 
 export type Product = {
@@ -60,7 +69,7 @@ export const STREET_GROUPS: StreetGroup[] = [
   {
     id: "brown",
     label: "Brown",
-    color: "#6B3F24",
+    color: "#8A4B2A",
     count: 2,
     examples: ["Grandma's House", "Aunt Lucy's", "Uncle Joe's", "The Attic"],
   },
@@ -81,7 +90,7 @@ export const STREET_GROUPS: StreetGroup[] = [
   {
     id: "orange",
     label: "Orange",
-    color: "#E07A3D",
+    color: "#C45C26",
     count: 3,
     examples: ["Snow Days", "Road Trips", "Hometown", "The Cabin"],
   },
@@ -102,7 +111,7 @@ export const STREET_GROUPS: StreetGroup[] = [
   {
     id: "green",
     label: "Green",
-    color: "#4A7C59",
+    color: "#5B7A6A",
     count: 3,
     examples: ["Adventures", "Celebrations", "Future Plans", "The Beach"],
   },
@@ -112,6 +121,37 @@ export const STREET_GROUPS: StreetGroup[] = [
     color: "#2C3E6B",
     count: 2,
     examples: ["Memories", "Always Home", "Forever"],
+  },
+];
+
+export const SPECIALS: SpecialSpace[] = [
+  {
+    id: "start",
+    label: "START",
+    role: "like GO",
+    hint: "Payday when you pass.",
+    examples: ["Allowance Day", "Payday", "The First Dance"],
+  },
+  {
+    id: "home",
+    label: "HOME",
+    role: "the bank",
+    hint: "Where money lives.",
+    examples: ["Grandma's account", "The Joint Account", "The Tab"],
+  },
+  {
+    id: "pause",
+    label: "PAUSE",
+    role: "like Jail",
+    hint: "Sit a turn.",
+    examples: ["Time Out", "Cold Feet", "On the Bench"],
+  },
+  {
+    id: "detour",
+    label: "DETOUR",
+    role: "like send-away",
+    hint: "Miss a turn / go back.",
+    examples: ["Miss a turn", "Lost the Rings", "Uber Home"],
   },
 ];
 
@@ -169,6 +209,12 @@ export const BOARDOPOLIS_PRESETS: BoardopolisPreset[] = [
     name: "Family hometown",
     stationsId: "family",
     utilitiesId: "home",
+    specials: {
+      start: "Allowance Day",
+      home: "Grandma's account",
+      pause: "Time Out",
+      detour: "Miss a turn",
+    },
     streets: {
       brown: ["Grandma's House", "Aunt Lucy's"],
       sky: ["The Porch", "The Garden", "First Home"],
@@ -185,6 +231,12 @@ export const BOARDOPOLIS_PRESETS: BoardopolisPreset[] = [
     name: "Wedding",
     stationsId: "travel",
     utilitiesId: "kitchen",
+    specials: {
+      start: "The First Dance",
+      home: "The Joint Account",
+      pause: "Cold Feet",
+      detour: "Lost the Rings",
+    },
     streets: {
       brown: ["First Date", "The Proposal"],
       sky: ["City Hall", "The Dance", "Vows"],
@@ -201,6 +253,12 @@ export const BOARDOPOLIS_PRESETS: BoardopolisPreset[] = [
     name: "Friends",
     stationsId: "hangouts",
     utilitiesId: "yard",
+    specials: {
+      start: "First Round",
+      home: "The Tab",
+      pause: "On the Bench",
+      detour: "Uber Home",
+    },
     streets: {
       brown: ["The Dive Bar", "The Couch"],
       sky: ["Group Chat", "Brunch", "Cheap Pizza"],
@@ -215,16 +273,16 @@ export const BOARDOPOLIS_PRESETS: BoardopolisPreset[] = [
 ];
 
 export type BoardCell =
-  | { kind: "corner"; id: string; label: string }
+  | { kind: "corner"; id: SpecialSpace["id"]; label: string }
   | { kind: "tax"; id: string; label: string }
   | { kind: "draw"; id: string; label: string }
   | { kind: "street"; id: string; groupId: string; index: number }
   | { kind: "station"; id: string; index: number }
   | { kind: "utility"; id: string; index: number };
 
-/** 40 spaces, clockwise from Start (bottom-right). Corners/tax/draw stay fixed. */
+/** 40 spaces, clockwise from START (top-left). */
 export const BOARD_CELLS: BoardCell[] = [
-  { kind: "corner", id: "start", label: "Start" },
+  { kind: "corner", id: "start", label: "START" },
   { kind: "street", id: "s-brown-0", groupId: "brown", index: 0 },
   { kind: "draw", id: "draw-1", label: "Draw" },
   { kind: "street", id: "s-brown-1", groupId: "brown", index: 1 },
@@ -234,7 +292,7 @@ export const BOARD_CELLS: BoardCell[] = [
   { kind: "draw", id: "draw-2", label: "Draw" },
   { kind: "street", id: "s-sky-1", groupId: "sky", index: 1 },
   { kind: "street", id: "s-sky-2", groupId: "sky", index: 2 },
-  { kind: "corner", id: "timeout", label: "Time Out" },
+  { kind: "corner", id: "pause", label: "PAUSE" },
   { kind: "street", id: "s-pink-0", groupId: "pink", index: 0 },
   { kind: "utility", id: "u-0", index: 0 },
   { kind: "street", id: "s-pink-1", groupId: "pink", index: 1 },
@@ -244,7 +302,7 @@ export const BOARD_CELLS: BoardCell[] = [
   { kind: "draw", id: "draw-3", label: "Draw" },
   { kind: "street", id: "s-orange-1", groupId: "orange", index: 1 },
   { kind: "street", id: "s-orange-2", groupId: "orange", index: 2 },
-  { kind: "corner", id: "rest", label: "Rest" },
+  { kind: "corner", id: "detour", label: "DETOUR" },
   { kind: "street", id: "s-red-0", groupId: "red", index: 0 },
   { kind: "draw", id: "draw-4", label: "Draw" },
   { kind: "street", id: "s-red-1", groupId: "red", index: 1 },
@@ -254,7 +312,7 @@ export const BOARD_CELLS: BoardCell[] = [
   { kind: "street", id: "s-yellow-1", groupId: "yellow", index: 1 },
   { kind: "utility", id: "u-1", index: 1 },
   { kind: "street", id: "s-yellow-2", groupId: "yellow", index: 2 },
-  { kind: "corner", id: "skip", label: "Skip a Turn" },
+  { kind: "corner", id: "home", label: "HOME" },
   { kind: "street", id: "s-green-0", groupId: "green", index: 0 },
   { kind: "street", id: "s-green-1", groupId: "green", index: 1 },
   { kind: "draw", id: "draw-5", label: "Draw" },
@@ -289,7 +347,7 @@ export const PRODUCTS: Product[] = [
       { id: "coastal", name: "Coastal", swatch: "#5B7A6A" },
     ],
     presets: BOARDOPOLIS_PRESETS.map((p) => ({ id: p.id, name: p.name, spaces: [] })),
-    photoSlots: 4,
+    photoSlots: 8,
     includes: [
       "18\" folded board with your streets, stations, and utilities",
       "Rigid gift box",
