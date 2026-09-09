@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="4" fill="#F6F1EA"/>
-  <rect x="6" y="6" width="20" height="20" fill="none" stroke="#C45C26" stroke-width="2"/>
-  <rect x="10" y="10" width="4" height="4" fill="#C45C26"/>
-  <rect x="18" y="18" width="4" height="4" fill="#1C1917"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Boardsy">
+  <rect width="32" height="32" rx="7" fill="#C45C26"/>
+  <rect x="3.25" y="3.25" width="25.5" height="25.5" rx="4.25" fill="none" stroke="#F6F1EA" stroke-width="1.5"/>
+  <path fill="#F6F1EA" fill-rule="evenodd" d="M10 7.2h8.1c3.55 0 5.7 1.85 5.7 4.55 0 1.7-.9 3.05-2.45 3.75 1.95.7 3.15 2.3 3.15 4.5 0 3.15-2.55 5.1-6.7 5.1H10V7.2zm3.35 2.55v4.35h4.15c1.7 0 2.6-.75 2.6-2.15s-.9-2.2-2.6-2.2H13.35zm0 6.9v5.4h4.7c1.95 0 3.05-.9 3.05-2.65 0-1.75-1.1-2.75-3.05-2.75h-4.7z"/>
 </svg>
